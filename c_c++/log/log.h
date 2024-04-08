@@ -64,7 +64,7 @@ private:
 	static pthread_mutex_t	m_mutex;	//互斥锁
 public:
 	static CIULOG * g();	//获取单列实例
-	//日志初始化,bool输出到文件还是控制台,bool长日志是否截断,PCTSTR统一字符串
+	//日志初始化,_mode输出到文件还是控制台,_is_thread是否为多线程,PCTSTR统一字符串
 	void init(bool _mode, bool _is_thread);
 	void setlevel(LOG_LEVEL _level);	//修改日志级别
 	bool log(const char * _file_name, const char* _fun_name, int _row, LOG_LEVEL _level, const char* _logstr,...);
