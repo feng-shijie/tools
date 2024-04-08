@@ -5,7 +5,6 @@ CIULOG* CIULOG::m_only 	  = new(std::nothrow)CIULOG();
 pthread_mutex_t	CIULOG::m_mutex;
 
 CIULOG::CIULOG(){
-	m_fp		= new std::ofstream();
 	m_mode 		= false;			//默认为单线程不需要使用互斥锁
 	m_out_mode 	= true;				//默认输入到日志文件内
 	m_level 	= LOG_LEVEL_INFO;	//默认日志级别为信息输出
@@ -16,10 +15,6 @@ CIULOG::~CIULOG()
 	if(m_only){
 		delete m_only;
 		m_only = nullptr;
-	}
-	if(m_fp){
-		delete m_fp;
-		m_fp = nullptr;
 	}
 }
 
@@ -62,9 +57,8 @@ bool CIULOG::log(const char * _file_name, const char* _fun_name, int _row, LOG_L
 		}
 	}
 
-	char str[2048],levelname[10];
-	memset(str,0,sizeof(str));
-	memset(levelname,0,sizeof(levelname));
+	char levelname[10];
+	memset(levelname, 0, sizeof(levelname));
 	
 	if(		_level == LOG_LEVEL_INFO	)	strcpy(levelname, "INFO");
 	else if(_level == LOG_LEVEL_WARNING )	strcpy(levelname, "WARNING");
@@ -76,17 +70,26 @@ bool CIULOG::log(const char * _file_name, const char* _fun_name, int _row, LOG_L
 	strftime(time_string,sizeof(time_string), "%H:%M:%S", ltm);
 
 	if(m_out_mode){
-		char c_name[10];
+		//限制log长度， c_str 2048
+		char c_name[10], c_str[2048], c_head[300];
+		memset(c_head, 0, sizeof(c_head));
+		memset(c_str , 0, sizeof(c_str ));
+		memset(c_name, 0, sizeof(c_name));
+
+		size_t size = sizeof(c_str);
+		if(strlen(_logstr) > size)	memcpy(c_str, _logstr, size);
+		else						memcpy(c_str, _logstr, strlen(_logstr));
+
 		sprintf(c_name,"%s_%d", LOG_FILE, ltm->tm_mday);
-		sprintf(str,"[%s][%s][%s][%s(): %d]::%s\n",time_string, levelname,_file_name, _fun_name, _row, _logstr);
-		//每次写日志要打开文件
-		m_fp->open(c_name, std::ios::out | std::ios::app);
-		if(!m_fp->is_open()){
+		sprintf(c_head,"[%s][%s][%s][%s(): %d]::",time_string, levelname,_file_name, _fun_name, _row);
+
+		m_fp.open(c_name, std::ios::out | std::ios::app);
+		if(!m_fp.is_open()){
 			std::cout << "file:: " << c_name << " open fail\n";
 			return false;
 		}
-		*m_fp << str;
-		m_fp->close();	//写完后关闭文件
+		m_fp << c_head << c_str << '\n';
+		m_fp.close();
 	}
 	else{
 		printf("[%s][%s][PID:%u][TID:%u][%s][%s: %d]::%s\n",time_string,levelname,
