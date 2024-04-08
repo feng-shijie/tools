@@ -35,6 +35,13 @@ void CIULOG::init(bool _mode, bool _is_thread)
 	m_out_mode 	= _mode;
 	m_mode		= _is_thread;
 
+	//如果有同名的文件也是返回0的
+	if(access(LOG_DIR, 0) != 0){
+		if(mkdir(LOG_DIR, ACCESSPERMS) != 0){
+			std::cout << "created dir fail" << std::endl;
+			return;
+		}
+	}
 	if(_is_thread){
 		if(pthread_mutex_init(&m_mutex,0) !=0)	//初始化互斥锁
 			LOG_ERROR("mutex init error");
@@ -70,17 +77,13 @@ bool CIULOG::log(const char * _file_name, const char* _fun_name, int _row, LOG_L
 	strftime(time_string,sizeof(time_string), "%H:%M:%S", ltm);
 
 	if(m_out_mode){
-		//限制log长度， c_str 2048
-		char c_name[10], c_str[2048], c_head[300];
+re_open:
+		char c_name[50], c_head[300];
 		memset(c_head, 0, sizeof(c_head));
-		memset(c_str , 0, sizeof(c_str ));
 		memset(c_name, 0, sizeof(c_name));
 
-		size_t size = sizeof(c_str);
-		if(strlen(_logstr) > size)	memcpy(c_str, _logstr, size);
-		else						memcpy(c_str, _logstr, strlen(_logstr));
-
-		sprintf(c_name,"%s_%d", LOG_FILE, ltm->tm_mday);
+		static int i_val = 0;
+		sprintf(c_name,"%s/log_%d_%d_%d.txt", LOG_DIR, ltm->tm_mon + 1, ltm->tm_mday, i_val);
 		sprintf(c_head,"[%s][%s][%s][%s(): %d]::",time_string, levelname,_file_name, _fun_name, _row);
 
 		m_fp.open(c_name, std::ios::out | std::ios::app);
@@ -88,7 +91,16 @@ bool CIULOG::log(const char * _file_name, const char* _fun_name, int _row, LOG_L
 			std::cout << "file:: " << c_name << " open fail\n";
 			return false;
 		}
-		m_fp << c_head << c_str << '\n';
+
+		//文件大小不超过2MB
+		std::streampos f_size = m_fp.tellp();
+		if(f_size > 1024 * 1000 * 2){
+			m_fp.close();
+			++i_val;
+			goto re_open;
+		}
+
+		m_fp << c_head << _logstr << '\n';
 		m_fp.close();
 	}
 	else{

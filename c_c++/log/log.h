@@ -19,10 +19,12 @@
 #include <thread>
 #include <mutex>
 #include <ctime>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /*********************日志系统*******************************/
 
-#define LOG_FILE "log"
+#define LOG_DIR "log_info"
 #define gettid()  syscall(SYS_gettid)
 
 //extern std::ofstream fp;	//外部变量声明如此使用
