@@ -58,7 +58,7 @@ private:
 	bool		m_out_mode;	//日志写入文件还是控制台
 	bool		m_mode;		//是否为多线程模式
 	LOG_LEVEL	m_level;	//日志级别
-	std::ofstream *	m_fp;
+	std::ofstream	m_fp;
 
 	static CIULOG *			m_only;		//唯一单实列对象指针
 	static pthread_mutex_t	m_mutex;	//互斥锁
